@@ -36,6 +36,7 @@ public class Main {
         for (int i = 0; i < 10; i++) {
             System.out.println(gen.generatePassword(16,true,true,true));
         }
+        
         char[] a = new char[10];
         if (a[6] == (char)0) {
             System.out.println("hyuck");
