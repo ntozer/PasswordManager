@@ -43,7 +43,7 @@ public class PwGenerator {
     private char[] initSpecials(boolean include) {
         char[] specials;
         if (include) {
-            String specialChars = " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+            String specialChars = "!#$%&*+-=?@^_";
             specials = new char[specialChars.length()];
             for (int i = 0; i < specials.length; i++) {
                 specials[i] = specialChars.charAt(i);
@@ -53,6 +53,21 @@ public class PwGenerator {
             specials = new char[0];
         }
         return specials;
+    }
+    
+    private char[] initExtremities(boolean include) {
+        char[] extremities;
+        if (include) {
+            String extremityChars = " /\\()[]{};:'\"<>,.`~|";
+            extremities = new char[extremityChars.length()];
+            for (int i = 0; i < extremities.length; i++) {
+                extremities[i] = extremityChars.charAt(i);
+            }
+        }
+        else {
+            extremities = new char[0];
+        }
+        return extremities;
     }
     
     private char[] concatenateCharArrs(char[]...args) {
@@ -73,12 +88,13 @@ public class PwGenerator {
     }
     
     public String generatePassword(int lengthIn, boolean containLetters, boolean containDigits,
-                                   boolean containSpecials) {
+                                   boolean containSpecials, boolean containExtremities) {
         char[] letters = initLetters(containLetters);
         char[] digits = initDigits(containDigits);
         char[] specials = initSpecials(containSpecials);
+        char[] extremities = initExtremities(containExtremities);
         
-        char[] validChars = concatenateCharArrs(letters, digits, specials);
+        char[] validChars = concatenateCharArrs(letters, digits, specials, extremities);
         
         Random randomNum = new Random();
         

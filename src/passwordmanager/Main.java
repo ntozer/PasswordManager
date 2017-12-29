@@ -34,7 +34,7 @@ public class Main {
         PwGenerator gen = new PwGenerator();
         
         for (int i = 0; i < 10; i++) {
-            System.out.println(gen.generatePassword(16,true,true,true));
+            System.out.println(gen.generatePassword(16,true,true,true,true));
         }
         
         char[] a = new char[10];
