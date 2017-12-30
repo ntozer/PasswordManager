@@ -46,15 +46,16 @@ public class DataManager {
         pstmt.execute();      
     }
     
-    public boolean verifyLogin(String username, String password) 
-            throws SQLException {
-        boolean loginSuccess = false;
+    public boolean verifyLogin(String username, String pwAttempt) 
+            throws SQLException, NoSuchAlgorithmException, InvalidKeySpecException {
         
-        PreparedStatement pstmt = con.prepareStatement("SELECT salt FROM users WHERE username = '" + username + "'");
+        PreparedStatement pstmt = con.prepareStatement("SELECT password, salt FROM users WHERE username = '" + username + "'");
         ResultSet res = pstmt.executeQuery();
-        String salt = res.getString(1);
-        String toHash = password + salt;    
+        byte[] password = res.getBytes(1);
+        byte[] salt = res.getBytes(2);
         
-        return loginSuccess;
+        PwHasher hasher = new PwHasher();
+        
+        return hasher.authenticate(pwAttempt, password, salt);
     }
 }

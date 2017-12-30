@@ -28,6 +28,16 @@ public class Main {
             dm.registerUser("ntozer", p1, "ntozer@unb.ca");
             dm.registerUser("asdf", p2, "asdf@swe.unb.ca");
             
+            if (dm.verifyLogin("ntozer", p1)) {
+                System.out.println("Logged in as ntozer");
+            }
+            if (dm.verifyLogin("ntozer", p2)) {
+                System.out.println("Logged in as ntozer");
+            }
+            if (dm.verifyLogin("asdf", p2)) {
+                System.out.println("Logged in as asdf");
+            }
+            
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
