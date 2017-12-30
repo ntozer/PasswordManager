@@ -4,6 +4,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
 /**
  *
@@ -11,6 +15,10 @@ import java.sql.PreparedStatement;
  */
 public class DataManager {
     private static Connection con;
+    
+    public DataManager() {
+        getConnection();
+    }
     
     private void getConnection() {
         try {
@@ -22,5 +30,31 @@ public class DataManager {
             System.exit(0);
         }
         System.out.println("DB Connection Status: Successful");
+    }
+    
+    public void registerUser(String username, String passwordIn, String email)
+            throws SQLException, NoSuchAlgorithmException, InvalidKeySpecException {
+        
+        PwHasher hasher = new PwHasher();
+        byte[] salt = hasher.generateSalt();
+        byte[] password = hasher.getEncryptedPw(passwordIn, salt);
+        PreparedStatement pstmt = con.prepareStatement("INSERT INTO users values(?,?,?,?)");
+        pstmt.setString(1, username);
+        pstmt.setBytes(2, password);
+        pstmt.setBytes(3, salt);
+        pstmt.setString(4, email);
+        pstmt.execute();      
+    }
+    
+    public boolean verifyLogin(String username, String password) 
+            throws SQLException {
+        boolean loginSuccess = false;
+        
+        PreparedStatement pstmt = con.prepareStatement("SELECT salt FROM users WHERE username = '" + username + "'");
+        ResultSet res = pstmt.executeQuery();
+        String salt = res.getString(1);
+        String toHash = password + salt;    
+        
+        return loginSuccess;
     }
 }

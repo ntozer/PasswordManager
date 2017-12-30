@@ -7,23 +7,32 @@ import java.util.Random;
  */
 public class PwGenerator {
     
-    private char[] initLetters(boolean include) {
-        char[] letters;
+    private char[] initUppercase(boolean include) {
+        char[] uppercases;
         if (include) {
-            letters = new char[52];
-            for (int i = 0; i < letters.length; i++) {
-                if (i < 26) {
-                    letters[i] = (char)(i + 65);
-                }
-                else {
-                    letters[i] = (char)(i + 71);
-                }
+            uppercases = new char[26];
+            for (int i = 0; i < uppercases.length; i++) {
+                uppercases[i] = (char)(i + 65);
             }
         }
         else {
-            letters = new char[0];
+            uppercases = new char[0];
         }
-        return letters;
+        return uppercases;
+    }
+    
+    private char[] initLowercase(boolean include) {
+        char[] lowercases;
+        if (include) {
+            lowercases = new char[26];
+            for (int i = 0; i < lowercases.length; i++) {
+                lowercases[i] = (char)(i + 97);
+            }
+        }
+        else {
+            lowercases = new char[0];
+        }
+        return lowercases;
     }
     
     private char[] initDigits(boolean include) {
@@ -87,14 +96,16 @@ public class PwGenerator {
         return concatenated;
     }
     
-    public String generatePassword(int lengthIn, boolean containLetters, boolean containDigits,
+    public String generatePassword(int lengthIn, boolean containUppers, 
+                                   boolean containLowers, boolean containDigits,
                                    boolean containSpecials, boolean containExtremities) {
-        char[] letters = initLetters(containLetters);
+        char[] uppers = initUppercase(containUppers);
+        char[] lowers = initLowercase(containLowers);
         char[] digits = initDigits(containDigits);
         char[] specials = initSpecials(containSpecials);
         char[] extremities = initExtremities(containExtremities);
         
-        char[] validChars = concatenateCharArrs(letters, digits, specials, extremities);
+        char[] validChars = concatenateCharArrs(uppers, lowers, digits, specials, extremities);
         
         Random randomNum = new Random();
         

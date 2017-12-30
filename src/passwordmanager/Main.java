@@ -16,30 +16,21 @@ public class Main {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
-        SQLiteTest test = new SQLiteTest();
-        ResultSet res;
-        
-        try{
-            res = test.displayUsers();
-            while(res.next()){
-                System.out.println(res.getString("fname") + " " + res.getString("lname"));
-            }
-        } catch(ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch(SQLException e) {
-            e.printStackTrace();
-        }
-        
+    public static void main(String[] args) {    
         PwGenerator gen = new PwGenerator();
-        
-        for (int i = 0; i < 10; i++) {
-            System.out.println(gen.generatePassword(16,true,true,true,true));
+        for (int i = 0; i < 5; i++) {
+            System.out.println(gen.generatePassword(4,false,false,true,false,false));
+        }
+        try {
+            String p1 = gen.generatePassword(10,true,true,true,true,false);
+            String p2 = gen.generatePassword(10,true,true,true,true,false);
+            DataManager dm = new DataManager();
+            dm.registerUser("ntozer", p1, "ntozer@unb.ca");
+            dm.registerUser("asdf", p2, "asdf@swe.unb.ca");
+            
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
         
-        char[] a = new char[10];
-        if (a[6] == (char)0) {
-            System.out.println("hyuck");
-        }
     }
 }
