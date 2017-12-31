@@ -1,12 +1,5 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package passwordmanager;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 /**
  *
  * @author Nathan
@@ -25,8 +18,8 @@ public class Main {
             String p1 = gen.generatePassword(10,true,true,true,true,false);
             String p2 = gen.generatePassword(10,true,true,true,true,false);
             DataManager dm = new DataManager();
-            dm.registerUser("ntozer", p1, "ntozer@unb.ca");
-            dm.registerUser("asdf", p2, "asdf@swe.unb.ca");
+            //dm.registerUser("ntozer", p1.toCharArray(), "ntozer@unb.ca");
+            //dm.registerUser("asdf", p2.toCharArray(), "asdf@swe.unb.ca");
             
             if (dm.verifyLogin("ntozer", p1)) {
                 System.out.println("Logged in as ntozer");
@@ -38,9 +31,18 @@ public class Main {
                 System.out.println("Logged in as asdf");
             }
             
+            dm.updateSettings("ntozer", 16, true, true, true, false, false);
+            dm.updateSettings("asdf", 8, true, true, true, true, true);
+            
+            SettingsObject settings = dm.getSettings("ntozer");
+            System.out.println("User: " + settings.username + " PassLength: "
+                               + settings.length + " ValidChars: " 
+                               + settings.lcase + settings.ucase 
+                               + settings.digits + settings.specials 
+                               + settings.extremities);
+            
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
-        
     }
 }
