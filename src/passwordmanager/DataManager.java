@@ -36,22 +36,25 @@ public class DataManager {
             throws SQLException, NoSuchAlgorithmException, InvalidKeySpecException {
         
         PwHasher hasher = new PwHasher();
-        byte[] salt = hasher.generateSalt();
-        byte[] password = hasher.getEncryptedPw(passwordIn, salt);
-        PreparedStatement pstmt = con.prepareStatement("INSERT INTO users values(?,?,?,?)");
+        byte[] pwSalt = hasher.generateSalt();
+        byte[] dbSalt = hasher.generateSalt();
+        byte[] hashedPw = hasher.getEncryptedPw(passwordIn, pwSalt);
+        
+        PreparedStatement pstmt = con.prepareStatement("INSERT INTO users values(?,?,?,?,?)");
         pstmt.setString(1, username);
-        pstmt.setBytes(2, password);
-        pstmt.setBytes(3, salt);
-        pstmt.setString(4, email);
+        pstmt.setBytes(2, hashedPw);
+        pstmt.setBytes(3, pwSalt);
+        pstmt.setBytes(4, dbSalt);
+        pstmt.setString(5, email);
         pstmt.execute();
         
         createSettings(username);
     }
     
-    public boolean verifyLogin(String username, String pwAttempt) 
+    public UserObject verifyLogin(String username, String pwAttempt) 
             throws SQLException, NoSuchAlgorithmException, InvalidKeySpecException {
         String sqlStmt;
-        sqlStmt = String.format("SELECT password, salt FROM users WHERE username = '%s';", username);
+        sqlStmt = String.format("SELECT password, passSalt FROM users WHERE username = '%s';", username);
         PreparedStatement pstmt = con.prepareStatement(sqlStmt);
         ResultSet res = pstmt.executeQuery();
         byte[] password = res.getBytes(1);
@@ -59,7 +62,41 @@ public class DataManager {
         
         PwHasher hasher = new PwHasher();
         
-        return hasher.authenticate(pwAttempt, password, salt);
+        UserObject user = new UserObject();
+        if (hasher.authenticate(pwAttempt, password, salt)) {
+            sqlStmt = String.format("SELECT username, email FROM users WHERE username = '%s';", username);
+            pstmt = con.prepareStatement(sqlStmt);
+            res = pstmt.executeQuery();
+            user.username = res.getString(1);
+            user.email = res.getString(2);
+        }
+        else
+            user = null;
+        return user;
+    }
+    
+    public UserObject verifyLogin2(String username, String pwAttempt) 
+            throws SQLException, NoSuchAlgorithmException, InvalidKeySpecException {
+        String sqlStmt;
+        sqlStmt = String.format("SELECT password, passSalt FROM users WHERE username = '%s';", username);
+        PreparedStatement pstmt = con.prepareStatement(sqlStmt);
+        ResultSet res = pstmt.executeQuery();
+        byte[] password = res.getBytes(1);
+        byte[] salt = res.getBytes(2);
+        
+        PwHasher hasher = new PwHasher();
+        
+        UserObject user = new UserObject();
+        if (hasher.authenticate(pwAttempt, password, salt)) {
+            sqlStmt = String.format("SELECT username, email FROM users WHERE username = '%s';", username);
+            pstmt = con.prepareStatement(sqlStmt);
+            res = pstmt.executeQuery();
+            user.username = res.getString(1);
+            user.email = res.getString(2);
+        }
+        else
+            user = null;
+        return user;
     }
 
     public void createAccount() {
@@ -72,7 +109,7 @@ public class DataManager {
     
     public SettingsObject getSettings(String username) throws SQLException {
         String sqlStmt;
-        sqlStmt = String.format("SELECT length, lowercase, uppercase, digits, specials, extremities, user FROM settings WHERE user = '%s';", username);
+        sqlStmt = String.format("SELECT length, lowercase, uppercase, digits, specials, extremities, username FROM settings WHERE username = '%s';", username);
         PreparedStatement pstmt = con.prepareStatement(sqlStmt);
         ResultSet result = pstmt.executeQuery();
         
@@ -84,14 +121,14 @@ public class DataManager {
             toReturn.digits = result.getInt("digits");
             toReturn.specials = result.getInt("specials");
             toReturn.extremities = result.getInt("extremities");
-            toReturn.username = result.getString("user");
+            toReturn.username = result.getString("username");
         }
         return toReturn;
     }
     
     public void createSettings(String username) throws SQLException {
         String sqlStmt;
-        sqlStmt = String.format("INSERT INTO settings (user) VALUES ('%s');", username);
+        sqlStmt = String.format("INSERT INTO settings (username) VALUES ('%s');", username);
         PreparedStatement pstmt = con.prepareStatement(sqlStmt);
         pstmt.execute();
     }
@@ -100,7 +137,7 @@ public class DataManager {
                                boolean uppercase, boolean digits, boolean specials,
                                boolean extremities) throws SQLException {
         String sqlStmt;
-        sqlStmt = String.format("UPDATE settings SET length = %s, lowercase = %x, uppercase = %x, digits = %x, specials = %x, extremities = %x WHERE user = '%s';",
+        sqlStmt = String.format("UPDATE settings SET length = %s, lowercase = %x, uppercase = %x, digits = %x, specials = %x, extremities = %x WHERE username = '%s';",
                                 length, bool2Int(lowercase), bool2Int(uppercase), bool2Int(digits), bool2Int(specials), bool2Int(extremities), username);
         PreparedStatement pstmt = con.prepareStatement(sqlStmt);
         pstmt.execute();

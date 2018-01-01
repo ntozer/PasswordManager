@@ -1,5 +1,6 @@
 package passwordmanager;
 
+import java.util.Arrays;
 /**
  *
  * @author Nathan
@@ -9,40 +10,62 @@ public class Main {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {    
+    public static void main(String[] args) {
         PwGenerator gen = new PwGenerator();
         for (int i = 0; i < 5; i++) {
             System.out.println(gen.generatePassword(4,false,false,true,false,false));
         }
         try {
-            String p1 = gen.generatePassword(10,true,true,true,true,false);
-            String p2 = gen.generatePassword(10,true,true,true,true,false);
             DataManager dm = new DataManager();
-            //dm.registerUser("ntozer", p1.toCharArray(), "ntozer@unb.ca");
-            //dm.registerUser("asdf", p2.toCharArray(), "asdf@swe.unb.ca");
+            String p1 = "i1tq+0lQmC";
+            String p2 = "4?OksPDj!P";
+            PwHasher hasher = new PwHasher();
+            byte[] a = hasher.generateSalt();
+            byte[] b = hasher.generateSalt();
+            byte[] c = hasher.getHashedPw(p1.toCharArray(), a, b);
+            byte[] d = hasher.getHashedPw(p1.toCharArray(), a, b);
+            System.out.println(Arrays.equals(c, d));
             
-            if (dm.verifyLogin("ntozer", p1)) {
-                System.out.println("Logged in as ntozer");
+            /*
+            boolean toReg = false;
+            if (toReg) {
+                p1 = gen.generatePassword(10,true,true,true,true,false);
+                p2 = gen.generatePassword(10,true,true,true,true,false);
+                System.out.println(p1);
+                System.out.println(p2);
+                //registering user
+                dm.registerUser("ntozer", p1.toCharArray(), "ntozer@unb.ca");
+                dm.registerUser("asdf", p2.toCharArray(), "asdf@swe.unb.ca");
             }
-            if (dm.verifyLogin("ntozer", p2)) {
-                System.out.println("Logged in as ntozer");
-            }
-            if (dm.verifyLogin("asdf", p2)) {
-                System.out.println("Logged in as asdf");
-            }
+            //varifying attempting to login
+            UserObject user = dm.verifyLogin("ntozer", p1);
+            System.out.println(user.username);
+            UserObject user2 = dm.verifyLogin("asdf", p2);
+            System.out.println(user2.username);
             
-            dm.updateSettings("ntozer", 16, true, true, true, false, false);
-            dm.updateSettings("asdf", 8, true, true, true, true, true);
+            //changing user pw generator settings
+            dm.updateSettings(user.username, 16, true, true, true, false, false);
+            dm.updateSettings(user2.username, 8, true, true, true, true, true);
             
-            SettingsObject settings = dm.getSettings("ntozer");
+            //displaying user settings
+            SettingsObject settings = dm.getSettings(user.username);
             System.out.println("User: " + settings.username + " PassLength: "
                                + settings.length + " ValidChars: " 
                                + settings.lcase + settings.ucase 
                                + settings.digits + settings.specials 
                                + settings.extremities);
             
+            settings = dm.getSettings(user2.username);
+            System.out.println("User: " + settings.username + " PassLength: "
+                               + settings.length + " ValidChars: " 
+                               + settings.lcase + settings.ucase 
+                               + settings.digits + settings.specials 
+                               + settings.extremities);
+*/
+            
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
+        
     }
 }

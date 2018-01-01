@@ -24,7 +24,7 @@ public class PwHasher {
     public byte[] getEncryptedPw(char[] password, byte[] salt)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
         String algorithm = "PBKDF2WithHmacSHA1";
-        int derivedKeyLength = 160;
+        int derivedKeyLength = 128;
         int iterations = 15000;
         
         KeySpec spec = new PBEKeySpec(password, salt, iterations, derivedKeyLength);
@@ -46,5 +46,13 @@ public class PwHasher {
         rand.nextBytes(salt);
         
         return salt;
+    }
+    
+    public byte[] getHashedPw(char[] password, byte[] dbKeySalt, byte[] pwSalt)
+            throws NoSuchAlgorithmException, InvalidKeySpecException {
+        
+        byte[] firstHash = getEncryptedPw(password, dbKeySalt);
+        byte[] secondHash = getEncryptedPw((new String(firstHash)).toCharArray(), pwSalt);
+        return secondHash;
     }
 }
