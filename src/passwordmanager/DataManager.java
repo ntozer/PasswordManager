@@ -19,9 +19,11 @@ import javax.crypto.NoSuchPaddingException;
  */
 public class DataManager {
     private static Connection con;
+    private PwHasher hasher;
     
     public DataManager() {
         getConnection();
+        hasher = new PwHasher();
     }
     
     private void getConnection() {
@@ -42,7 +44,6 @@ public class DataManager {
                    NoSuchAlgorithmException, InvalidKeyException, 
                    IllegalBlockSizeException, BadPaddingException {
         
-        PwHasher hasher = new PwHasher();
         //creating a new DB encryption/decryption key
         byte[] dbDataKey = hasher.generateDBKey();
         
@@ -85,9 +86,7 @@ public class DataManager {
         byte[] encryptedDBKey = res.getBytes("dbKey");
         byte[] pwSalt = res.getBytes("passSalt");
         byte[] dbSalt = res.getBytes("dbKeySalt");
-        
-        PwHasher hasher = new PwHasher();
-        
+                
         byte[] dbKeyEncryptionKey = hasher.getHashedPw(pwAttempt, dbSalt);
         byte[] dbKey = hasher.decrypt(dbKeyEncryptionKey, encryptedDBKey);
         byte[] password = hasher.decrypt(dbKey, encryptedPassword);
@@ -106,12 +105,48 @@ public class DataManager {
         return user;
     }
 
-    public void createAccount() {
+    public void createAccount(byte[] dbKey, String username, String title, 
+                              String accUsername, char[] accPassword, String website) 
+            throws SQLException, NoSuchAlgorithmException, 
+                   InvalidKeySpecException, NoSuchPaddingException, 
+                   NoSuchAlgorithmException, InvalidKeyException, 
+                   IllegalBlockSizeException, BadPaddingException {
+        byte[] encryptedUsername = hasher.encrypt(dbKey, accUsername.getBytes());
+        byte[] encryptedPassword = hasher.encrypt(dbKey, (new String(accPassword)).getBytes());
         
+        PreparedStatement pstmt = con.prepareStatement("INSERT INTO accounts values(?,?,?,?,?)");
+        pstmt.setString(1, title);
+        pstmt.setBytes(2, encryptedUsername);
+        pstmt.setBytes(3, encryptedPassword);
+        pstmt.setString(4, website);
+        pstmt.setString(5, username);
+        pstmt.execute();
     }
     
-    public void getAcccountInfo() {
+    public AccountObject getAcccountInfo(byte[] dbKey, String username, String title)
+            throws SQLException, NoSuchAlgorithmException, 
+                   InvalidKeySpecException, NoSuchPaddingException, 
+                   NoSuchAlgorithmException, InvalidKeyException, 
+                   IllegalBlockSizeException, BadPaddingException {
+        String sqlStmt;
+        sqlStmt = String.format("SELECT a_username, a_password, website FROM accounts WHERE username = '%s' AND title = '%s';", username, title);
+        PreparedStatement pstmt = con.prepareStatement(sqlStmt);
+        ResultSet result = pstmt.executeQuery();
         
+        byte[] encodedUsername = result.getBytes("a_username");
+        byte[] encodedPassword = result.getBytes("a_password");
+        String website = result.getString("website");
+        
+        String accUsername = new String(hasher.decrypt(dbKey, encodedUsername));
+        String accPassword = new String(hasher.decrypt(dbKey, encodedPassword));
+        
+        AccountObject account = new AccountObject();
+        account.accPassword = accPassword;
+        account.accUsername = accUsername;
+        account.title = title;
+        account.website = website;
+        
+        return account;
     }
     
     public SettingsObject getSettings(String username) throws SQLException {
