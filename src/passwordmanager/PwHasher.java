@@ -2,12 +2,21 @@ package passwordmanager;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.InvalidKeyException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.Arrays;
+import java.util.Base64;
 
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  *
@@ -15,13 +24,13 @@ import javax.crypto.spec.PBEKeySpec;
  */
 public class PwHasher {
     
-    public boolean authenticate(String attemptedPw, byte[] encryptedPw, byte[] salt)
+    public boolean authenticate(char[] attemptedPw, byte[] hashedPw, byte[] salt)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
-        byte[] encryptedAttemptedPw = getEncryptedPw(attemptedPw, salt);
-        return Arrays.equals(encryptedPw, encryptedAttemptedPw);
+        byte[] hashedAttemptedPw = getHashedPw(attemptedPw, salt);
+        return Arrays.equals(hashedPw, hashedAttemptedPw);
     }
     
-    public byte[] getEncryptedPw(char[] password, byte[] salt)
+    public byte[] getHashedPw(char[] password, byte[] salt)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
         String algorithm = "PBKDF2WithHmacSHA1";
         int derivedKeyLength = 128;
@@ -34,9 +43,17 @@ public class PwHasher {
         return f.generateSecret(spec).getEncoded();
     }
     
-    public byte[] getEncryptedPw(String password, byte[] salt)
+    public byte[] getHashedPw(String password, byte[] salt)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
-        return getEncryptedPw(password.toCharArray(), salt);
+        return getHashedPw(password.toCharArray(), salt);
+    }
+    
+    public byte[] generateDBKey() throws NoSuchAlgorithmException {
+        KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+        keyGen.init(128);
+        SecretKey secretKey = keyGen.generateKey();
+        byte[] secretKeyBytes = secretKey.getEncoded();
+        return secretKeyBytes;
     }
     
     public byte[] generateSalt() throws NoSuchAlgorithmException {        
@@ -48,11 +65,33 @@ public class PwHasher {
         return salt;
     }
     
-    public byte[] getHashedPw(char[] password, byte[] dbKeySalt, byte[] pwSalt)
-            throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public byte[] encrypt(byte[] encodedKey, byte[] data) 
+            throws NoSuchPaddingException, NoSuchAlgorithmException, 
+                   InvalidKeyException, IllegalBlockSizeException,
+                   BadPaddingException {
         
-        byte[] firstHash = getEncryptedPw(password, dbKeySalt);
-        byte[] secondHash = getEncryptedPw((new String(firstHash)).toCharArray(), pwSalt);
-        return secondHash;
+        SecretKey key = new SecretKeySpec(encodedKey, 0, encodedKey.length, "AES");
+        
+        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        byte[] encryptedData = Base64.getEncoder().encode(cipher.doFinal(data));
+        return encryptedData;
     }
+    
+    public byte[] decrypt(byte[] encodedKey, byte[] encodedData) 
+            throws NoSuchPaddingException, NoSuchAlgorithmException, 
+                   InvalidKeyException, IllegalBlockSizeException,
+                   BadPaddingException {
+        
+        SecretKey key = new SecretKeySpec(encodedKey, 0, encodedKey.length, "AES");
+        
+        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, key);
+        
+        byte[] decodedData = Base64.getDecoder().decode(encodedData);
+        byte[] data = cipher.doFinal(decodedData);
+        
+        return encodedData;
+    }
+    
 }

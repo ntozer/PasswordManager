@@ -1,32 +1,35 @@
 package passwordmanager;
 
-import java.util.Arrays;
 /**
  *
  * @author Nathan
  */
 public class Main {
 
-    /**
-     * @param args the command line arguments
-     */
     public static void main(String[] args) {
         PwGenerator gen = new PwGenerator();
-        for (int i = 0; i < 5; i++) {
-            System.out.println(gen.generatePassword(4,false,false,true,false,false));
+        PwHasher hash = new PwHasher();
+        try {
+            char[] password = gen.generatePassword(16, true, true, true, true, false).toCharArray();
+            System.out.println(new String(password));
+            byte[] bytePass = (new String(password)).getBytes();
+            
+            byte[] key = hash.generateDBKey();
+            byte[] encodedPass = hash.encrypt(key, bytePass);
+            byte[] decodedPass = hash.decrypt(key, encodedPass);
+            
+            System.out.println(new String(decodedPass));
+            
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
+        
+        /*
         try {
             DataManager dm = new DataManager();
             String p1 = "i1tq+0lQmC";
-            String p2 = "4?OksPDj!P";
-            PwHasher hasher = new PwHasher();
-            byte[] a = hasher.generateSalt();
-            byte[] b = hasher.generateSalt();
-            byte[] c = hasher.getHashedPw(p1.toCharArray(), a, b);
-            byte[] d = hasher.getHashedPw(p1.toCharArray(), a, b);
-            System.out.println(Arrays.equals(c, d));
+            String p2 = "4?OksPDj!P";            
             
-            /*
             boolean toReg = false;
             if (toReg) {
                 p1 = gen.generatePassword(10,true,true,true,true,false);
@@ -38,9 +41,9 @@ public class Main {
                 dm.registerUser("asdf", p2.toCharArray(), "asdf@swe.unb.ca");
             }
             //varifying attempting to login
-            UserObject user = dm.verifyLogin("ntozer", p1);
+            UserObject user = dm.verifyLogin("ntozer", p1.toCharArray());
             System.out.println(user.username);
-            UserObject user2 = dm.verifyLogin("asdf", p2);
+            UserObject user2 = dm.verifyLogin("asdf", p2.toCharArray());
             System.out.println(user2.username);
             
             //changing user pw generator settings
@@ -61,11 +64,10 @@ public class Main {
                                + settings.lcase + settings.ucase 
                                + settings.digits + settings.specials 
                                + settings.extremities);
-*/
             
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
-        
+        */
     }
 }

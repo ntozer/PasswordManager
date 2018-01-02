@@ -38,7 +38,7 @@ public class DataManager {
         PwHasher hasher = new PwHasher();
         byte[] pwSalt = hasher.generateSalt();
         byte[] dbSalt = hasher.generateSalt();
-        byte[] hashedPw = hasher.getEncryptedPw(passwordIn, pwSalt);
+        byte[] hashedPw = hasher.getHashedPw(passwordIn, pwSalt);
         
         PreparedStatement pstmt = con.prepareStatement("INSERT INTO users values(?,?,?,?,?)");
         pstmt.setString(1, username);
@@ -51,31 +51,44 @@ public class DataManager {
         createSettings(username);
     }
     
-    public UserObject verifyLogin(String username, String pwAttempt) 
+    
+    
+    
+    public void registerUser2(String username, char[] passwordIn, String email)
             throws SQLException, NoSuchAlgorithmException, InvalidKeySpecException {
-        String sqlStmt;
-        sqlStmt = String.format("SELECT password, passSalt FROM users WHERE username = '%s';", username);
-        PreparedStatement pstmt = con.prepareStatement(sqlStmt);
-        ResultSet res = pstmt.executeQuery();
-        byte[] password = res.getBytes(1);
-        byte[] salt = res.getBytes(2);
         
         PwHasher hasher = new PwHasher();
+        //creating a new DB encryption/decryption key
+        byte[] dbKey = hasher.generateDBKey();
         
-        UserObject user = new UserObject();
-        if (hasher.authenticate(pwAttempt, password, salt)) {
-            sqlStmt = String.format("SELECT username, email FROM users WHERE username = '%s';", username);
-            pstmt = con.prepareStatement(sqlStmt);
-            res = pstmt.executeQuery();
-            user.username = res.getString(1);
-            user.email = res.getString(2);
-        }
-        else
-            user = null;
-        return user;
+        //generating a salt for the DB and the user entered password
+        byte[] pwSalt = hasher.generateSalt();
+        byte[] dbSalt = hasher.generateSalt();
+        
+        //creating a key to decrypt the original DB encrypt/decrypt key
+        byte[] dbKeyEncryptionKey = hasher.getHashedPw(passwordIn, dbSalt);
+        
+        //creaing a hashed and salted password to store in DB
+        byte[] hashedSaltedPw = hasher.getHashedPw(passwordIn, pwSalt);
+        
+        //
+        
+        PreparedStatement pstmt = con.prepareStatement("INSERT INTO users values(?,?,?,?,?)");
+        pstmt.setString(1, username);
+        pstmt.setBytes(2, hashedSaltedPw);
+        pstmt.setBytes(3, pwSalt);
+        pstmt.setBytes(4, dbSalt);
+        pstmt.setString(5, email);
+        pstmt.execute();
+        
+        createSettings(username);
     }
     
-    public UserObject verifyLogin2(String username, String pwAttempt) 
+    
+    
+    
+    
+    public UserObject verifyLogin(String username, char[] pwAttempt) 
             throws SQLException, NoSuchAlgorithmException, InvalidKeySpecException {
         String sqlStmt;
         sqlStmt = String.format("SELECT password, passSalt FROM users WHERE username = '%s';", username);
