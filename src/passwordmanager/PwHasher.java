@@ -91,7 +91,6 @@ public class PwHasher {
         byte[] decodedData = Base64.getDecoder().decode(encodedData);
         byte[] data = cipher.doFinal(decodedData);
         
-        return encodedData;
+        return data;
     }
-    
 }

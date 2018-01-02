@@ -5,9 +5,13 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 /**
  *
@@ -30,36 +34,17 @@ public class DataManager {
             System.exit(0);
         }
         System.out.println("DB Connection Status: Successful");
-    }
+    }   
     
     public void registerUser(String username, char[] passwordIn, String email)
-            throws SQLException, NoSuchAlgorithmException, InvalidKeySpecException {
-        
-        PwHasher hasher = new PwHasher();
-        byte[] pwSalt = hasher.generateSalt();
-        byte[] dbSalt = hasher.generateSalt();
-        byte[] hashedPw = hasher.getHashedPw(passwordIn, pwSalt);
-        
-        PreparedStatement pstmt = con.prepareStatement("INSERT INTO users values(?,?,?,?,?)");
-        pstmt.setString(1, username);
-        pstmt.setBytes(2, hashedPw);
-        pstmt.setBytes(3, pwSalt);
-        pstmt.setBytes(4, dbSalt);
-        pstmt.setString(5, email);
-        pstmt.execute();
-        
-        createSettings(username);
-    }
-    
-    
-    
-    
-    public void registerUser2(String username, char[] passwordIn, String email)
-            throws SQLException, NoSuchAlgorithmException, InvalidKeySpecException {
+            throws SQLException, NoSuchAlgorithmException, 
+                   InvalidKeySpecException, NoSuchPaddingException, 
+                   NoSuchAlgorithmException, InvalidKeyException, 
+                   IllegalBlockSizeException, BadPaddingException {
         
         PwHasher hasher = new PwHasher();
         //creating a new DB encryption/decryption key
-        byte[] dbKey = hasher.generateDBKey();
+        byte[] dbDataKey = hasher.generateDBKey();
         
         //generating a salt for the DB and the user entered password
         byte[] pwSalt = hasher.generateSalt();
@@ -68,44 +53,53 @@ public class DataManager {
         //creating a key to decrypt the original DB encrypt/decrypt key
         byte[] dbKeyEncryptionKey = hasher.getHashedPw(passwordIn, dbSalt);
         
-        //creaing a hashed and salted password to store in DB
+        //creating a hashed and salted and then encrypted password to store in DB
         byte[] hashedSaltedPw = hasher.getHashedPw(passwordIn, pwSalt);
+        byte[] encryptedHashedSaltedPw = hasher.encrypt(dbDataKey, hashedSaltedPw);
         
-        //
+        //encrypting the DB Data key to store in the database
+        byte[] encryptedDBDataKey = hasher.encrypt(dbKeyEncryptionKey, dbDataKey);
         
-        PreparedStatement pstmt = con.prepareStatement("INSERT INTO users values(?,?,?,?,?)");
+        PreparedStatement pstmt = con.prepareStatement("INSERT INTO users values(?,?,?,?,?,?)");
         pstmt.setString(1, username);
-        pstmt.setBytes(2, hashedSaltedPw);
-        pstmt.setBytes(3, pwSalt);
-        pstmt.setBytes(4, dbSalt);
-        pstmt.setString(5, email);
+        pstmt.setBytes(2, encryptedHashedSaltedPw);
+        pstmt.setBytes(3, encryptedDBDataKey);
+        pstmt.setBytes(4, pwSalt);
+        pstmt.setBytes(5, dbSalt);
+        pstmt.setString(6, email);
         pstmt.execute();
         
         createSettings(username);
     }
     
-    
-    
-    
-    
     public UserObject verifyLogin(String username, char[] pwAttempt) 
-            throws SQLException, NoSuchAlgorithmException, InvalidKeySpecException {
+            throws SQLException, NoSuchAlgorithmException, 
+                   InvalidKeySpecException, NoSuchPaddingException, 
+                   NoSuchAlgorithmException, InvalidKeyException, 
+                   IllegalBlockSizeException, BadPaddingException {
         String sqlStmt;
-        sqlStmt = String.format("SELECT password, passSalt FROM users WHERE username = '%s';", username);
+        sqlStmt = String.format("SELECT password, dbKey, passSalt, dbKeySalt FROM users WHERE username = '%s';", username);
         PreparedStatement pstmt = con.prepareStatement(sqlStmt);
         ResultSet res = pstmt.executeQuery();
-        byte[] password = res.getBytes(1);
-        byte[] salt = res.getBytes(2);
+        byte[] encryptedPassword = res.getBytes("password");
+        byte[] encryptedDBKey = res.getBytes("dbKey");
+        byte[] pwSalt = res.getBytes("passSalt");
+        byte[] dbSalt = res.getBytes("dbKeySalt");
         
         PwHasher hasher = new PwHasher();
         
+        byte[] dbKeyEncryptionKey = hasher.getHashedPw(pwAttempt, dbSalt);
+        byte[] dbKey = hasher.decrypt(dbKeyEncryptionKey, encryptedDBKey);
+        byte[] password = hasher.decrypt(dbKey, encryptedPassword);
+        
         UserObject user = new UserObject();
-        if (hasher.authenticate(pwAttempt, password, salt)) {
+        if (hasher.authenticate(pwAttempt, password, pwSalt)) {
             sqlStmt = String.format("SELECT username, email FROM users WHERE username = '%s';", username);
             pstmt = con.prepareStatement(sqlStmt);
             res = pstmt.executeQuery();
             user.username = res.getString(1);
             user.email = res.getString(2);
+            user.dbKey = dbKey;
         }
         else
             user = null;

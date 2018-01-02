@@ -24,13 +24,13 @@ public class Main {
             System.out.println(e.getMessage());
         }
         
-        /*
+        
         try {
             DataManager dm = new DataManager();
-            String p1 = "i1tq+0lQmC";
-            String p2 = "4?OksPDj!P";            
+            String p1 = "";
+            String p2 = "";            
             
-            boolean toReg = false;
+            boolean toReg = true;
             if (toReg) {
                 p1 = gen.generatePassword(10,true,true,true,true,false);
                 p2 = gen.generatePassword(10,true,true,true,true,false);
@@ -68,6 +68,6 @@ public class Main {
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
-        */
+        
     }
 }
